@@ -6,6 +6,103 @@
   <title>Document</title>
 </head>
 <body>
-  
+  <form action="" class="form">
+    <div class="form-item" data-field-container="loginId">
+        <div class="item">
+            <div class="left">
+                账号
+            </div>
+            <div class="right">
+                <input data-field-listener="input" type="text" data-field>
+            </div>
+        </div>
+        <div class="error">
+            错误消息
+        </div>
+    </div>
+    <div class="form-item" data-field-container="loves">
+        <div class="item">
+            <div class="left">
+                爱好
+            </div>
+            <div class="right">
+                <label>
+                    <input type="checkbox" value="football" data-field>
+                    足球
+                </label>
+                <label>
+                    <input type="checkbox" value="basketball" data-field>
+                    篮球
+                </label>
+                <label>
+                    <input type="checkbox" value="music" data-field>
+                    音乐
+                </label>
+                <label>
+                    <input type="checkbox" value="movie" data-field>
+                    电影
+                </label>
+                <label>
+                    <input type="checkbox" value="other" data-field>
+                    其他
+                </label>
+            </div>
+        </div>
+        <div class="error">
+            错误消息
+        </div>
+    </div>
+    <div class="form-item" data-field-container="pwd">
+        <div class="item">
+            <div class="left">
+                密码
+            </div>
+            <div class="right">
+                <input data-field data-field-listener="input" data-field-trigger="pwdAgain,loginId" type="password" name="pwd">
+            </div>
+        </div>
+        <div class="error">
+            错误消息
+        </div>
+    </div>
+    <div class="form-item" data-field-container="pwdAgain">
+        <div class="item">
+            <div class="left">
+                确认密码
+            </div>
+            <div class="right">
+                <input type="password" data-field name="pwdAgain">
+            </div>
+        </div>
+        <div class="error">
+            错误消息
+        </div>
+    </div>
+    <div class="form-item">
+        <div class="item">
+            <div class="left">
+                手机号
+            </div>
+            <div class="right">
+                <input type="text" name="mobile">
+            </div>
+        </div>
+        <div class="error">
+            错误消息
+        </div>
+    </div>
+    <div class="form-item">
+        <div class="button">
+            <button>提交</button>
+        </div>
+    </div>
+  </form>
+
+  <script src="./formvalidator.js"></script>
+
+  <script>
+
+    
+  </script>
 </body>
 </html>
