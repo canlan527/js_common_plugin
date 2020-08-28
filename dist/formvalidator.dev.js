@@ -22,6 +22,79 @@ window.myPlugin.FormValidator = function (option) {
   };
   this.option = Object.assign({}, defaultOption, option); // 混合形成最终配置
   // console.log(this.option);
+  // 注册各种事件
+
+  var elems = this.getAllElements(); // 拿到所有元素
+  // console.log(elems)
+
+  var that = this;
+
+  for (var i = 0; i < elems.length; i++) {
+    var elem = elems[i];
+    var field = elem.field; // console.log(field, elem.doms)
+
+    (function (field) {
+      elem.doms.forEach(function (el) {
+        var name = that.getEventName(el);
+        var fields = [field]; // 触发事件时 要验证的字段
+
+        var triggerProp = myPlugin.FormValidator.dataConfig.dataFieldTrigger; // 得到触发验证的元素的自定义属性值
+
+        var triggers = el.getAttribute(triggerProp);
+
+        if (triggers) {
+          triggers = triggers.split(','); // 变成数组
+
+          fields = fields.concat(triggers); // 添加上其他字段
+        } // console.log(triggers)
+        // 给 el 元素注册事件
+        // console.log(name);
+
+
+        el.addEventListener(name, function () {
+          that.setStatus.apply(that, fields);
+        });
+      });
+    })(field);
+  }
+};
+/**
+ * 获取事件名
+ */
+
+
+myPlugin.FormValidator.prototype.getEventName = function (el) {
+  var name = myPlugin.FormValidator.dataConfig.dataFieldListener; // 获取自定义属性名
+
+  var eventName = el.getAttribute(name);
+
+  if (!eventName) {
+    eventName = myPlugin.FormValidator.dataConfig.dataFieldDefaultListener;
+  }
+
+  return eventName;
+};
+/**
+ * 得到所有要验证的表单元素
+ */
+
+
+myPlugin.FormValidator.prototype.getAllElements = function () {
+  var container = this.getAllContainers(); // 得到所有的表单容器
+  // console.log(container)
+
+  var result = []; // 最终的结果
+
+  for (var i = 0; i < container.length; i++) {
+    var con = container[i];
+    var obj = {
+      field: con.getAttribute(myPlugin.FormValidator.dataConfig.fieldContainer)
+    };
+    obj.doms = this.getFieldElement(con);
+    result.push(obj);
+  }
+
+  return result;
 };
 /**
  * 自定义属性的名字
@@ -107,9 +180,9 @@ myPlugin.FormValidator.prototype.getFieldData = function (field) {
 
 
 myPlugin.FormValidator.prototype.getFormData = function () {
-  var dataName = myPlugin.FormValidator.dataConfig.fieldContainer; // 拿到所有表单域容器
+  var dataName = myPlugin.FormValidator.dataConfig.fieldContainer;
+  container = this.getAllContainers(); // 得到所有的表单容器
 
-  var container = this.option.formDOM.querySelectorAll("[".concat(dataName, "]"));
   var that = this;
   var formData = {}; // 拿到各个表单域的字段名
 
@@ -122,6 +195,17 @@ myPlugin.FormValidator.prototype.getFormData = function () {
     formData[field] = data; // 把拿到的属性名属性值放到 formData 对象里
   });
   return formData;
+};
+/**
+ * 得到所有的表单容器
+ */
+
+
+myPlugin.FormValidator.prototype.getAllContainers = function () {
+  var dataName = myPlugin.FormValidator.dataConfig.fieldContainer; // 拿到所有表单域容器
+
+  var container = this.option.formDOM.querySelectorAll("[".concat(dataName, "]"));
+  return Array.from(container);
 };
 /**
  * 得到表单字段容器
@@ -142,7 +226,7 @@ myPlugin.FormValidator.prototype.getFieldContainer = function (field) {
 
 myPlugin.FormValidator.prototype.getFieldElement = function (fieldContainer) {
   var eles = fieldContainer.querySelectorAll("[".concat(myPlugin.FormValidator.dataConfig.dataField, "]"));
-  return eles;
+  return Array.from(eles);
 };
 /**
  * 验证一个数据
@@ -161,7 +245,7 @@ myPlugin.FormValidator.prototype.validateData = function (data, ruleObj, formDat
 
     if (!func) {
       // 预设值无效
-      throw TypeError('验证规则不正确');
+      throw new TypeError('验证规则不正确');
     }
 
     if (func(data, formData)) {
@@ -182,7 +266,7 @@ myPlugin.FormValidator.prototype.validateData = function (data, ruleObj, formDat
     return ruleObj.msg;
   } else if (typeof ruleObj.rule === 'function') {
     //自定义函数
-    return ruleObj.rule();
+    return ruleObj.rule(data, formData);
   }
 
   throw new TypeError('验证规则不正确');
@@ -301,6 +385,7 @@ myPlugin.FormValidator.prototype.setStatus = function () {
     });
     that.setFieldStatus(res, field);
   });
+  return tesults;
 };
 /**
  * 预设的验证规则 ,通过 true， 没通过 false
@@ -329,11 +414,7 @@ myPlugin.FormValidator.validators = {
     return reg.test(data);
   },
   number: function number(data) {
-    if (data === null) {
-      return false;
-    }
-
-    var reg = /^\d+(\.?\d+)$/;
+    var reg = /^\d+(\.\d+)?$/;
     return reg.test(data);
   }
 };
