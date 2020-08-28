@@ -21,8 +21,7 @@ window.myPlugin.FormValidator = function (option) {
 
   };
   this.option = Object.assign({}, defaultOption, option); // 混合形成最终配置
-
-  console.log(this.option);
+  // console.log(this.option);
 };
 /**
  * 自定义属性的名字
@@ -115,7 +114,7 @@ myPlugin.FormValidator.prototype.getFormData = function () {
   var formData = {}; // 拿到各个表单域的字段名
 
   container.forEach(function (con) {
-    console.log(con);
+    // console.log(con)
     var field = con.getAttribute(dataName); // 字段名
 
     var data = that.getFieldData(field); // 字段值
@@ -144,4 +143,197 @@ myPlugin.FormValidator.prototype.getFieldContainer = function (field) {
 myPlugin.FormValidator.prototype.getFieldElement = function (fieldContainer) {
   var eles = fieldContainer.querySelectorAll("[".concat(myPlugin.FormValidator.dataConfig.dataField, "]"));
   return eles;
+};
+/**
+ * 验证一个数据
+ * @param {array | string | null} data  要验证的数据
+ * @param {object} ruleObj 验证规则对象
+ * @param {object} formData 整个表单数据对象
+ * @returns 返回验证结果 如果通过验证 返回 true  如果没有通过 返回一个错误信息  不论结果如何  不对页面进行处理
+ */
+
+
+myPlugin.FormValidator.prototype.validateData = function (data, ruleObj, formData) {
+  if (typeof ruleObj.rule === 'string') {
+    // 规则为预设指
+    // 必填 + 扩展
+    var func = myPlugin.FormValidator.validators[ruleObj.rule];
+
+    if (!func) {
+      // 预设值无效
+      throw TypeError('验证规则不正确');
+    }
+
+    if (func(data, formData)) {
+      return true;
+    }
+
+    return ruleObj.msg;
+  } else if (ruleObj.rule instanceof RegExp) {
+    // 规则为正则
+    if (data === null) {
+      return ruleObj.msg;
+    }
+
+    if (ruleObj.rule.test(data)) {
+      return true;
+    }
+
+    return ruleObj.msg;
+  } else if (typeof ruleObj.rule === 'function') {
+    //自定义函数
+    return ruleObj.rule();
+  }
+
+  throw new TypeError('验证规则不正确');
+};
+/**
+ * 验证某个字段，返回一个验证结果，如果验证通过，返回 true，如果验证没有通过，返回验证信息
+ * 验证信息： 字段名， 数据， 规则对象， 错误消息
+ */
+
+
+myPlugin.FormValidator.prototype.validateField = function (field, formData) {
+  var data = formData[field]; // 要验证的数据
+  // console.log(data)
+
+  var ruleObjs = this.option.formRule[field]; // 验证规则数组
+
+  if (!ruleObjs) {
+    return true;
+  }
+
+  for (var i = 0; i < ruleObjs.length; i++) {
+    var ruleObj = ruleObjs[i];
+    var result = this.validateData(data, ruleObj, formData); // console.log(result)
+
+    if (result !== true) {
+      // 有错误， result 是错误信息
+      return {
+        //验证错误的各种信息
+        field: field,
+        data: data,
+        ruleObj: ruleObj,
+        msg: result
+      };
+    }
+  }
+
+  return true;
+};
+/**
+ * 验证表单 分为有参与无参的两种情况  得到验证结果
+ */
+
+
+myPlugin.FormValidator.prototype.validate = function () {
+  var formData = this.getFormData(); // 得到所有的表单数据
+
+  if (arguments.length === 0) {
+    // 无参的情况
+    var fields = Object.getOwnPropertyNames(formData); // 得到表单项的所有属性名
+  } else {
+    var fields = Array.from(arguments); // 参数变为数组
+  }
+
+  var that = this;
+  var results = fields.map(function (field) {
+    return that.validateField(field, formData);
+  }).filter(function (item) {
+    return item !== true;
+  });
+  return results;
+};
+/**
+ * 根据验证结果 设置某个表单项的状态
+ * @param {*} validataResult 该表单项的错误信息， 如果是 undefined，表示没有错误
+ * @param {*} field 验证的表单项的名称
+ */
+
+
+myPlugin.FormValidator.prototype.setFieldStatus = function (validataResult, field) {
+  var fieldContainer = this.getFieldContainer(field); // 表单字段容器
+
+  var errorEle = fieldContainer.querySelector["".concat(myPlugin.FormValidator.dataConfig.dataFieldError)]; // 错误消息元素
+
+  if (!errorEle) {
+    errorEle = fieldContainer.querySelector(".".concat(myPlugin.FormValidator.dataConfig.dataFieldDefaultError));
+  }
+
+  if (validataResult) {
+    // 有错误
+    if (errorEle) {
+      errorEle.innerHTML = validataResult.msg;
+    }
+
+    fieldContainer.classList.add(this.option.errorClass);
+  } else {
+    // 无错误
+    fieldContainer.classList.remove(this.option.errorClass);
+
+    if (errorEle) {
+      errorEle.innerHTML = '';
+    }
+  }
+};
+/**
+ * 设置整个表单的状态
+ * 无参：整个表单
+ * 有参：根据参数设置具体的表单项
+ */
+
+
+myPlugin.FormValidator.prototype.setStatus = function () {
+  if (arguments.length === 0) {
+    var formData = this.getFormData(); // 得到整个表单数据
+
+    var fields = Object.getOwnPropertyNames(formData); // 得到表单中的所有字段
+  } else {
+    var fields = Array.from(arguments); // 字段来自参数的传递
+  }
+
+  var results = this.validate.apply(this, fields); // 得到验证结果
+
+  var that = this;
+  fields.forEach(function (field) {
+    var res = results.find(function (item) {
+      return item.field == field; // 从验证结果中，寻找某个字段验证结果，没有找到为 undefined
+    });
+    that.setFieldStatus(res, field);
+  });
+};
+/**
+ * 预设的验证规则 ,通过 true， 没通过 false
+ * require 非空验证
+ */
+
+
+myPlugin.FormValidator.validators = {
+  required: function required(data) {
+    if (!data) {
+      return false;
+    }
+
+    if (Array.isArray(data) && data.length === 0) {
+      return false;
+    }
+
+    return true;
+  },
+  mail: function mail(data) {
+    if (data === null) {
+      return false;
+    }
+
+    var reg = /^\w+@\w+(\.\w+){1,2}$/;
+    return reg.test(data);
+  },
+  number: function number(data) {
+    if (data === null) {
+      return false;
+    }
+
+    var reg = /^\d+(\.?\d+)$/;
+    return reg.test(data);
+  }
 };

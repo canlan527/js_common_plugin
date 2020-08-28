@@ -109,16 +109,49 @@
         {
           rule: "required",
           msg: "请填写账号"
+        },
+        {
+          rule: /^.{6,12}$/,
+          msg: "账号必须是6-12位字符"
         }
       ],
-      pwd: [],
-      pwdAgain: []
+      pwd: [
+        {
+          rule: "required",
+          msg: "请输入密码"
+        },
+      ],
+      pwdAgain: [
+        {
+          rule: "required",
+          msg: "请再次输入密码"
+        },
+        {
+          rule: function(value, formData) {
+            if(value === formData.pwd) {
+                return true;
+            } else {
+                return '两次密码输入不一致';
+            }
+          }
+        }
+      ],
+      loves: [
+        {
+          rule: "required",
+          msg:"请至少选择一个爱好"
+        }
+      ]
     }
     var formvalidator = new myPlugin.FormValidator({
       formDom: document.querySelector('.form'),
       formRule,
       errorClass: 'has-error'
     })
+    var result = formvalidator.validateData('111', {
+        rule: 'mail',
+        msg: '错误'
+    }, formvalidator.getFormData())
   </script>
 </body>
 </html>
